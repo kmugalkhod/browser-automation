@@ -49,7 +49,7 @@ function CollapsedWorkflowMenu() {
     <Popover>
       <PopoverTrigger
         aria-label="Open workflows"
-        className="flex size-10 items-center justify-center rounded-xl text-[#f5f5f5] outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-popup-open:bg-sidebar-accent"
+        className="flex size-10 items-center justify-center rounded-xl text-sidebar-foreground outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-popup-open:bg-sidebar-accent"
       >
         <Workflow className="size-5 shrink-0" strokeWidth={2.2} />
       </PopoverTrigger>
@@ -57,7 +57,7 @@ function CollapsedWorkflowMenu() {
         side="right"
         align="start"
         sideOffset={12}
-        className="dark max-h-[calc(100svh-2rem)] w-80 gap-3 overflow-y-auto rounded-2xl bg-sidebar p-4 text-sidebar-foreground ring-sidebar-border"
+        className="max-h-[calc(100svh-2rem)] w-80 gap-3 overflow-y-auto rounded-2xl bg-sidebar p-4 text-sidebar-foreground ring-sidebar-border"
       >
         <button
           type="button"

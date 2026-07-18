@@ -14,10 +14,10 @@ import { WorkflowNav } from "@/feature/workflows/component/workflow-nav"
 
 export function AppSidebar() {
   return (
-    <Sidebar className="dark" variant="inset" collapsible="icon">
+    <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader className="hidden items-center gap-4 p-2 pt-4 group-data-[collapsible=icon]:flex">
         <CollapsedOrganizationSwitcher />
-        <SidebarTrigger className="size-10 rounded-xl text-[#f5f5f5]" />
+        <SidebarTrigger className="size-10 rounded-xl text-sidebar-foreground" />
       </SidebarHeader>
 
       <SidebarHeader className="px-5 pt-5 pb-3 group-data-[collapsible=icon]:hidden">
