@@ -15,12 +15,12 @@ import { WorkflowNav } from "@/feature/workflows/component/workflow-nav"
 export function AppSidebar() {
   return (
     <Sidebar variant="inset" collapsible="icon">
-      <SidebarHeader className="hidden items-center gap-4 p-2 pt-4 group-data-[collapsible=icon]:flex">
+      <SidebarHeader className="hidden items-center gap-3 border-b border-sidebar-border/70 p-2 pt-4 pb-3 group-data-[collapsible=icon]:flex">
         <CollapsedOrganizationSwitcher />
         <SidebarTrigger className="size-10 rounded-xl text-sidebar-foreground" />
       </SidebarHeader>
 
-      <SidebarHeader className="px-5 pt-5 pb-3 group-data-[collapsible=icon]:hidden">
+      <SidebarHeader className="border-b border-sidebar-border/70 px-4 pt-4 pb-3 group-data-[collapsible=icon]:hidden">
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <div className="min-w-0 overflow-hidden">
             <ExpandedOrganizationSwitcher />
@@ -31,11 +31,11 @@ export function AppSidebar() {
 
       <WorkflowNav />
 
-      <SidebarFooter className="hidden items-center p-2 pb-4 group-data-[collapsible=icon]:flex">
+      <SidebarFooter className="hidden items-center border-t border-sidebar-border/70 p-2 pt-3 pb-4 group-data-[collapsible=icon]:flex">
         <CollapsedUserButton />
       </SidebarFooter>
 
-      <SidebarFooter className="p-5 group-data-[collapsible=icon]:hidden">
+      <SidebarFooter className="border-t border-sidebar-border/70 p-4 group-data-[collapsible=icon]:hidden">
         <ExpandedUserButton />
       </SidebarFooter>
     </Sidebar>

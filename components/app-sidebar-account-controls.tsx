@@ -22,10 +22,10 @@ export function ExpandedOrganizationSwitcher() {
         elements: {
           rootBox: "w-full min-w-0 overflow-hidden",
           organizationSwitcherTrigger:
-            "h-11 w-full min-w-0 justify-start gap-3 overflow-hidden rounded-lg border-0 bg-transparent px-1 pr-2 text-sidebar-foreground hover:bg-sidebar-accent",
+            "h-10 w-full min-w-0 justify-start gap-3 overflow-hidden rounded-lg border-0 bg-transparent px-2 text-sidebar-foreground hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring",
           organizationPreview: "min-w-0 flex-1 overflow-hidden",
-          organizationPreviewAvatarBox: "size-10 shrink-0 rounded-xl",
-          organizationPreviewMainIdentifier: "min-w-0 truncate",
+          organizationPreviewAvatarBox: "size-8 shrink-0 rounded-lg",
+          organizationPreviewMainIdentifier: "min-w-0 truncate text-sm font-medium",
           organizationPreviewSecondaryIdentifier: "hidden",
           organizationSwitcherTriggerIcon:
             "ml-1 shrink-0 text-sidebar-foreground/70",
@@ -73,10 +73,10 @@ export function ExpandedUserButton() {
         elements: {
           rootBox: "min-w-0 max-w-full",
           userButtonTrigger:
-            "max-w-full justify-start overflow-hidden rounded-lg",
+            "h-10 max-w-full justify-start overflow-hidden rounded-lg px-2 hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring",
           userButtonBox: "min-w-0 overflow-hidden",
-          userButtonOuterIdentifier: "truncate text-sidebar-foreground",
-          avatarBox: "size-10 shrink-0",
+          userButtonOuterIdentifier: "truncate text-sm text-sidebar-foreground",
+          avatarBox: "size-8 shrink-0",
         },
       }}
     />
