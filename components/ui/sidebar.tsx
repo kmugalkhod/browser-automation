@@ -260,6 +260,7 @@ function SidebarTrigger({
 
   return (
     <Button
+      {...props}
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
       variant="ghost"
@@ -269,7 +270,6 @@ function SidebarTrigger({
         onClick?.(event)
         toggleSidebar()
       }}
-      {...props}
     >
       <PanelLeftIcon />
       <span className="sr-only">Toggle Sidebar</span>
