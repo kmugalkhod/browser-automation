@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useTransition } from "react"
 import { Plus, Workflow } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -19,38 +19,30 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import type { Workflow as WorkflowRecord } from "@/db/schema"
+import { generateSlug } from "@/feature/workflows/lib/generate-slug"
 
-const workflows = [
-  { name: "Daily lead capture", detail: "Ready" },
-  { name: "Invoice upload", detail: "Queued" },
-  { name: "Competitor prices", detail: "2 min ago" },
-  { name: "Support inbox sweep", detail: "Paused" },
-  { name: "Weekly report export", detail: "Tomorrow" },
-  { name: "CRM enrichment", detail: "Ready" },
-  { name: "Partner portal sync", detail: "1 hr ago" },
-  { name: "QA checkout flow", detail: "Draft" },
-  { name: "Renewal reminders", detail: "Friday" },
-] as const
+type CreateWorkflowAction = (name: string) => Promise<void>
 
-type WorkflowItem = (typeof workflows)[number]
+function getWorkflowDetail(workflow: WorkflowRecord) {
+  return workflow.description?.trim() || "Ready"
+}
 
-function WorkflowList({
-  selectedWorkflow,
-  onSelectWorkflow,
-}: {
-  selectedWorkflow: WorkflowItem["name"]
-  onSelectWorkflow: (workflow: WorkflowItem["name"]) => void
-}) {
+function WorkflowList({ workflows }: { workflows: WorkflowRecord[] }) {
+  if (workflows.length === 0) {
+    return (
+      <div className="rounded-lg px-2.5 py-3 text-sm text-sidebar-foreground/60">
+        No workflows
+      </div>
+    )
+  }
+
   return (
-    <SidebarMenu className="gap-0.5" role="radiogroup" aria-label="Workflows">
+    <SidebarMenu className="gap-0.5" aria-label="Workflows">
       {workflows.map((workflow) => (
-        <SidebarMenuItem key={workflow.name}>
+        <SidebarMenuItem key={workflow.id}>
           <SidebarMenuButton
             type="button"
-            role="radio"
-            aria-checked={selectedWorkflow === workflow.name}
-            onClick={() => onSelectWorkflow(workflow.name)}
-            isActive={selectedWorkflow === workflow.name}
             tooltip={workflow.name}
             className="h-11 rounded-lg px-2.5 text-sidebar-foreground"
           >
@@ -63,7 +55,7 @@ function WorkflowList({
                 {workflow.name}
               </span>
               <span className="block truncate text-xs leading-4 text-sidebar-foreground/60 group-data-active/menu-button:text-sidebar-accent-foreground/70">
-                {workflow.detail}
+                {getWorkflowDetail(workflow)}
               </span>
             </span>
           </SidebarMenuButton>
@@ -74,11 +66,13 @@ function WorkflowList({
 }
 
 function CollapsedWorkflowMenu({
-  selectedWorkflow,
-  onSelectWorkflow,
+  workflows,
+  onCreateWorkflow,
+  isCreatingWorkflow,
 }: {
-  selectedWorkflow: WorkflowItem["name"]
-  onSelectWorkflow: (workflow: WorkflowItem["name"]) => void
+  workflows: WorkflowRecord[]
+  onCreateWorkflow: () => void
+  isCreatingWorkflow: boolean
 }) {
   return (
     <Popover>
@@ -98,56 +92,70 @@ function CollapsedWorkflowMenu({
           <PopoverTitle>Workflows</PopoverTitle>
           <PopoverDescription>{workflows.length} saved</PopoverDescription>
         </PopoverHeader>
-        <Button type="button" size="lg" className="justify-start">
+        <Button
+          type="button"
+          size="lg"
+          className="justify-start"
+          disabled={isCreatingWorkflow}
+          onClick={onCreateWorkflow}
+        >
           <Plus />
           New workflow
         </Button>
         <Separator className="bg-sidebar-border" />
-        <div
-          className="flex flex-col gap-1"
-          role="radiogroup"
-          aria-label="Workflows"
-        >
-          {workflows.map((workflow) => (
-            <button
-              type="button"
-              key={workflow.name}
-              role="radio"
-              aria-checked={selectedWorkflow === workflow.name}
-              data-active={selectedWorkflow === workflow.name}
-              onClick={() => onSelectWorkflow(workflow.name)}
-              className="flex h-10 items-center justify-between gap-3 rounded-lg px-2.5 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground"
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className="size-2 shrink-0 rounded-full border border-sidebar-border bg-transparent data-[active=true]:border-sidebar-primary data-[active=true]:bg-sidebar-primary"
-                  data-active={selectedWorkflow === workflow.name}
-                />
-                <span className="truncate">{workflow.name}</span>
-              </span>
-              <span className="shrink-0 text-xs text-sidebar-foreground/60">
-                {workflow.detail}
-              </span>
-            </button>
-          ))}
+        <div className="flex flex-col gap-1" aria-label="Workflows">
+          {workflows.length === 0 ? (
+            <div className="rounded-lg px-2.5 py-3 text-sm text-sidebar-foreground/60">
+              No workflows
+            </div>
+          ) : (
+            workflows.map((workflow) => (
+              <button
+                type="button"
+                key={workflow.id}
+                className="flex h-10 items-center justify-between gap-3 rounded-lg px-2.5 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span
+                    aria-hidden="true"
+                    className="size-2 shrink-0 rounded-full border border-sidebar-border bg-transparent"
+                  />
+                  <span className="truncate">{workflow.name}</span>
+                </span>
+                <span className="shrink-0 text-xs text-sidebar-foreground/60">
+                  {getWorkflowDetail(workflow)}
+                </span>
+              </button>
+            ))
+          )}
         </div>
       </PopoverContent>
     </Popover>
   )
 }
 
-export function WorkflowNav() {
-  const [selectedWorkflow, setSelectedWorkflow] = useState<
-    WorkflowItem["name"]
-  >(workflows[0].name)
+export function WorkflowNav({
+  workflows,
+  createWorkflowAction,
+}: {
+  workflows: WorkflowRecord[]
+  createWorkflowAction: CreateWorkflowAction
+}) {
+  const [isCreatingWorkflow, startCreateWorkflowTransition] = useTransition()
+
+  function handleCreateWorkflow() {
+    startCreateWorkflowTransition(async () => {
+      await createWorkflowAction(generateSlug())
+    })
+  }
 
   return (
     <>
       <SidebarContent className="hidden items-center overflow-visible px-1 pt-8 group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:overflow-visible">
         <CollapsedWorkflowMenu
-          selectedWorkflow={selectedWorkflow}
-          onSelectWorkflow={setSelectedWorkflow}
+          workflows={workflows}
+          isCreatingWorkflow={isCreatingWorkflow}
+          onCreateWorkflow={handleCreateWorkflow}
         />
       </SidebarContent>
 
@@ -165,15 +173,14 @@ export function WorkflowNav() {
             aria-label="New workflow"
             variant="ghost"
             size="icon-sm"
+            disabled={isCreatingWorkflow}
+            onClick={handleCreateWorkflow}
           >
             <Plus />
           </Button>
         </div>
         <div className="pt-2">
-          <WorkflowList
-            selectedWorkflow={selectedWorkflow}
-            onSelectWorkflow={setSelectedWorkflow}
-          />
+          <WorkflowList workflows={workflows} />
         </div>
       </SidebarContent>
     </>
