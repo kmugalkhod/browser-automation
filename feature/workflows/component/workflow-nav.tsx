@@ -1,6 +1,8 @@
 "use client"
 
 import { useTransition } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { Plus, Workflow } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -28,7 +30,23 @@ function getWorkflowDetail(workflow: WorkflowRecord) {
   return workflow.description?.trim() || "Ready"
 }
 
-function WorkflowList({ workflows }: { workflows: WorkflowRecord[] }) {
+function getWorkflowHref(workflow: WorkflowRecord) {
+  return `/workflows/${workflow.id}`
+}
+
+function isActiveWorkflowPath(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+function WorkflowList({
+  workflows,
+  variant = "expanded",
+}: {
+  workflows: WorkflowRecord[]
+  variant?: "expanded" | "collapsed"
+}) {
+  const pathname = usePathname()
+
   if (workflows.length === 0) {
     return (
       <div className="rounded-lg px-2.5 py-3 text-sm text-sidebar-foreground/60">
@@ -39,28 +57,55 @@ function WorkflowList({ workflows }: { workflows: WorkflowRecord[] }) {
 
   return (
     <SidebarMenu className="gap-0.5" aria-label="Workflows">
-      {workflows.map((workflow) => (
-        <SidebarMenuItem key={workflow.id}>
-          <SidebarMenuButton
-            type="button"
-            tooltip={workflow.name}
-            className="h-11 rounded-lg px-2.5 text-sidebar-foreground"
-          >
-            <span
-              aria-hidden="true"
-              className="size-2 shrink-0 rounded-full border border-sidebar-border bg-transparent group-data-active/menu-button:border-sidebar-primary group-data-active/menu-button:bg-sidebar-primary"
-            />
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm leading-5">
-                {workflow.name}
-              </span>
-              <span className="block truncate text-xs leading-4 text-sidebar-foreground/60 group-data-active/menu-button:text-sidebar-accent-foreground/70">
-                {getWorkflowDetail(workflow)}
-              </span>
-            </span>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+      {workflows.map((workflow) => {
+        const href = getWorkflowHref(workflow)
+        const isActive = isActiveWorkflowPath(pathname, href)
+
+        return (
+          <SidebarMenuItem key={workflow.id}>
+            <SidebarMenuButton
+              render={<Link href={href} />}
+              isActive={isActive}
+              tooltip={workflow.name}
+              className={
+                variant === "collapsed"
+                  ? "h-10 justify-between rounded-lg px-2.5 text-sidebar-foreground"
+                  : "h-11 rounded-lg px-2.5 text-sidebar-foreground"
+              }
+            >
+              {variant === "collapsed" ? (
+                <>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="size-2 shrink-0 rounded-full border border-sidebar-border bg-transparent group-data-active/menu-button:border-sidebar-primary group-data-active/menu-button:bg-sidebar-primary"
+                    />
+                    <span className="truncate">{workflow.name}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-sidebar-foreground/60 group-data-active/menu-button:text-sidebar-accent-foreground/70">
+                    {getWorkflowDetail(workflow)}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className="size-2 shrink-0 rounded-full border border-sidebar-border bg-transparent group-data-active/menu-button:border-sidebar-primary group-data-active/menu-button:bg-sidebar-primary"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm leading-5">
+                      {workflow.name}
+                    </span>
+                    <span className="block truncate text-xs leading-4 text-sidebar-foreground/60 group-data-active/menu-button:text-sidebar-accent-foreground/70">
+                      {getWorkflowDetail(workflow)}
+                    </span>
+                  </span>
+                </>
+              )}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        )
+      })}
     </SidebarMenu>
   )
 }
@@ -103,31 +148,8 @@ function CollapsedWorkflowMenu({
           New workflow
         </Button>
         <Separator className="bg-sidebar-border" />
-        <div className="flex flex-col gap-1" aria-label="Workflows">
-          {workflows.length === 0 ? (
-            <div className="rounded-lg px-2.5 py-3 text-sm text-sidebar-foreground/60">
-              No workflows
-            </div>
-          ) : (
-            workflows.map((workflow) => (
-              <button
-                type="button"
-                key={workflow.id}
-                className="flex h-10 items-center justify-between gap-3 rounded-lg px-2.5 text-left text-sm outline-none hover:bg-sidebar-accent focus-visible:ring-2 focus-visible:ring-sidebar-ring"
-              >
-                <span className="flex min-w-0 items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className="size-2 shrink-0 rounded-full border border-sidebar-border bg-transparent"
-                  />
-                  <span className="truncate">{workflow.name}</span>
-                </span>
-                <span className="shrink-0 text-xs text-sidebar-foreground/60">
-                  {getWorkflowDetail(workflow)}
-                </span>
-              </button>
-            ))
-          )}
+        <div className="flex flex-col gap-1">
+          <WorkflowList workflows={workflows} variant="collapsed" />
         </div>
       </PopoverContent>
     </Popover>
