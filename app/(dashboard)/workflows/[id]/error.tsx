@@ -1,0 +1,49 @@
+"use client"
+
+import { AlertTriangle } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
+
+type WorkflowErrorProps = {
+  error: Error & { digest?: string }
+  unstable_retry: () => void
+}
+
+export default function WorkflowError({
+  error,
+  unstable_retry,
+}: WorkflowErrorProps) {
+  return (
+    <main className="flex h-full min-h-0 items-center justify-center bg-background px-6 py-10 text-foreground">
+      <Empty className="max-w-lg gap-0 border-0 p-0">
+        <EmptyHeader className="max-w-md gap-0">
+          <EmptyMedia
+            variant="icon"
+            className="mb-5 size-11 rounded-lg bg-muted text-foreground ring-1 ring-border [&_svg:not([class*='size-'])]:size-5"
+          >
+            <AlertTriangle strokeWidth={2.2} />
+          </EmptyMedia>
+          <EmptyTitle className="text-lg leading-7 font-medium tracking-tight">
+            Workflow failed to load
+          </EmptyTitle>
+          <EmptyDescription className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+            {error.message || "Something went wrong while opening this workflow."}
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent className="mt-5 max-w-none">
+          <Button type="button" onClick={unstable_retry}>
+            Try again
+          </Button>
+        </EmptyContent>
+      </Empty>
+    </main>
+  )
+}
