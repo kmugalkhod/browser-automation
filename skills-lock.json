@@ -60,6 +60,12 @@
       "sourceType": "github",
       "skillPath": "skills/neon-postgres/SKILL.md",
       "computedHash": "7829cd52b49b75f2f7ef5cf577d233b4d9ed2a0775c3b95021b94eaa9d56630a"
+    },
+    "trigger-dev-tasks": {
+      "source": "triggerdotdev/trigger.dev",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/trigger-dev-tasks/SKILL.md",
+      "computedHash": "2aa347a499cdc48b612e35aba9e2c0cd22af35d2e34b8b0d8e3ad4c36f3090ec"
     }
   }
 }
