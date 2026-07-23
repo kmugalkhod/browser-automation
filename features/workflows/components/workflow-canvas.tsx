@@ -1,10 +1,7 @@
 "use client"
 
-import { useCallback, useState, useSyncExternalStore } from "react"
+import { useSyncExternalStore } from "react"
 import {
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
   Background,
   BackgroundVariant,
   ConnectionLineType,
@@ -16,13 +13,13 @@ import {
   type DefaultEdgeOptions,
   type Edge,
   type NodeTypes,
-  type OnConnect,
-  type OnEdgesChange,
-  type OnNodesChange,
 } from "@xyflow/react"
+import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
 import { GitBranchIcon } from "lucide-react"
 import { useTheme } from "next-themes"
-
+import "@xyflow/react/dist/style.css"
+import "@liveblocks/react-ui/styles.css"
+import "@liveblocks/react-flow/styles.css"
 import { StepNode } from "@/features/workflows/components/step-node"
 import {
   createStepNode,
@@ -88,31 +85,13 @@ function useIsHydrated() {
 export function WorkflowCanvas() {
   const { resolvedTheme } = useTheme()
   const isHydrated = useIsHydrated()
-  const [nodes, setNodes] = useState(initialNodes)
-  const [edges, setEdges] = useState(initialEdges)
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onDelete } =
+    useLiveblocksFlow<WorkflowNode, WorkflowEdge>({
+      suspense: true,
+      nodes: { initial: initialNodes },
+      edges: { initial: initialEdges },
+    })
   const colorMode = isHydrated && resolvedTheme === "dark" ? "dark" : "light"
-
-  const onNodesChange = useCallback<OnNodesChange<WorkflowNode>>(
-    (changes) =>
-      setNodes((nodesSnapshot) =>
-        applyNodeChanges<WorkflowNode>(changes, nodesSnapshot)
-      ),
-    []
-  )
-  const onEdgesChange = useCallback<OnEdgesChange<WorkflowEdge>>(
-    (changes) =>
-      setEdges((edgesSnapshot) =>
-        applyEdgeChanges<WorkflowEdge>(changes, edgesSnapshot)
-      ),
-    []
-  )
-  const onConnect = useCallback<OnConnect>(
-    (connection) =>
-      setEdges((edgesSnapshot) =>
-        addEdge({ ...connection, type: edgeType }, edgesSnapshot)
-      ),
-    []
-  )
 
   return (
     <div className="size-full min-h-0 bg-background">
@@ -125,6 +104,7 @@ export function WorkflowCanvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onDelete={onDelete}
         defaultEdgeOptions={defaultEdgeOptions}
         connectionLineType={ConnectionLineType.SmoothStep}
         connectionLineStyle={defaultEdgeOptions.style}
@@ -155,6 +135,7 @@ export function WorkflowCanvas() {
           color="var(--workflow-canvas-dot-color)"
         />
         <Controls aria-label="Canvas controls" position="bottom-left" />
+        <Cursors />
         <MiniMap
           ariaLabel="Workflow overview"
           className="workflow-canvas-minimap hidden sm:block"
