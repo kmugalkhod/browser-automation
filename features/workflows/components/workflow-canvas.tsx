@@ -10,21 +10,31 @@ import {
   ConnectionLineType,
   Controls,
   MarkerType,
+  MiniMap,
+  Panel,
   ReactFlow,
   type DefaultEdgeOptions,
   type Edge,
-  type Node,
+  type NodeTypes,
   type OnConnect,
   type OnEdgesChange,
   type OnNodesChange,
 } from "@xyflow/react"
+import { GitBranchIcon } from "lucide-react"
 import { useTheme } from "next-themes"
 
-type WorkflowNode = Node<{ label: string }>
+import { StepNode } from "@/features/workflows/components/step-node"
+import {
+  createStepNode,
+  type StepNodeType,
+} from "@/features/workflows/nodes/node-registry"
+
+type WorkflowNode = StepNodeType
 type WorkflowEdge = Edge
 
-const nodeClassName =
-  "rounded-md border border-border bg-card px-3 py-2 text-sm font-medium text-card-foreground shadow-sm"
+const nodeTypes = {
+  step: StepNode,
+} satisfies NodeTypes
 
 const edgeType = "smoothstep" satisfies NonNullable<WorkflowEdge["type"]>
 
@@ -41,39 +51,24 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 }
 
 const initialNodes: WorkflowNode[] = [
-  {
+  createStepNode({
     id: "start",
-    type: "input",
+    type: "start",
     position: { x: 0, y: 0 },
-    className: nodeClassName,
-    data: { label: "Start workflow" },
-  },
-  {
-    id: "browser",
-    position: { x: 240, y: 120 },
-    className: nodeClassName,
-    data: { label: "Run browser task" },
-  },
-  {
-    id: "finish",
-    type: "output",
-    position: { x: 520, y: 20 },
-    className: nodeClassName,
-    data: { label: "Finish" },
-  },
+  }),
+  createStepNode({
+    id: "open-url",
+    type: "open-url",
+    position: { x: 280, y: 0 },
+    values: { url: "https://youtube.com" },
+  }),
 ]
 
 const initialEdges: WorkflowEdge[] = [
   {
-    id: "start-browser",
+    id: "start-open-url",
     source: "start",
-    target: "browser",
-    type: edgeType,
-  },
-  {
-    id: "browser-finish",
-    source: "browser",
-    target: "finish",
+    target: "open-url",
     type: edgeType,
   },
 ]
@@ -126,6 +121,7 @@ export function WorkflowCanvas() {
         className="workflow-canvas-flow text-foreground [&_.react-flow__attribution]:text-muted-foreground [&_.react-flow__controls]:overflow-hidden [&_.react-flow__controls]:rounded-md [&_.react-flow__controls]:border [&_.react-flow__controls]:border-border"
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
@@ -138,13 +134,41 @@ export function WorkflowCanvas() {
         snapGrid={[16, 16]}
         colorMode={colorMode}
       >
+        <Panel position="top-left" className="pointer-events-none m-4">
+          <div
+            aria-label={`${nodes.length} workflow steps`}
+            className="workflow-canvas-summary"
+          >
+            <GitBranchIcon aria-hidden="true" className="size-4" />
+            <span className="font-medium text-foreground">Workflow</span>
+            <span
+              aria-hidden="true"
+              className="size-1 rounded-full bg-border"
+            />
+            <span>{nodes.length} steps</span>
+          </div>
+        </Panel>
         <Background
           variant={BackgroundVariant.Dots}
           gap={20}
           size={1.4}
           color="var(--workflow-canvas-dot-color)"
         />
-        <Controls />
+        <Controls aria-label="Canvas controls" position="bottom-left" />
+        <MiniMap
+          ariaLabel="Workflow overview"
+          className="workflow-canvas-minimap hidden sm:block"
+          nodeColor="var(--muted-foreground)"
+          nodeStrokeColor="var(--background)"
+          nodeBorderRadius={6}
+          nodeStrokeWidth={2}
+          bgColor="var(--background)"
+          maskColor="color-mix(in oklch, var(--background) 72%, transparent)"
+          maskStrokeColor="var(--ring)"
+          maskStrokeWidth={1}
+          pannable
+          zoomable
+        />
       </ReactFlow>
     </div>
   )

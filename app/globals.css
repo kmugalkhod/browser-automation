@@ -141,13 +141,17 @@
   --xy-background-color: var(--background);
   --workflow-canvas-dot-color: color-mix(
     in oklch,
-    var(--foreground) 24%,
+    var(--foreground) 16%,
     var(--background)
   );
   --xy-background-pattern-dots-color: var(--workflow-canvas-dot-color);
-  --xy-edge-stroke: var(--muted-foreground);
+  --xy-edge-stroke: color-mix(
+    in oklch,
+    var(--muted-foreground) 76%,
+    var(--background)
+  );
   --xy-edge-stroke-selected: var(--foreground);
-  --xy-connectionline-stroke: var(--muted-foreground);
+  --xy-connectionline-stroke: var(--foreground);
   --xy-node-color: var(--card-foreground);
   --xy-node-background-color: var(--card);
   --xy-node-border: 1px solid var(--border);
@@ -161,7 +165,7 @@
   --xy-controls-button-color: var(--foreground);
   --xy-controls-button-color-hover: var(--foreground);
   --xy-controls-button-border-color: var(--border);
-  --xy-controls-box-shadow: 0 1px 3px oklch(0 0 0 / 8%);
+  --xy-controls-box-shadow: none;
   --xy-attribution-background-color: color-mix(
     in oklch,
     var(--background) 82%,
@@ -173,6 +177,66 @@
     transparent
   );
   --xy-selection-border: 1px dotted var(--ring);
+}
+
+.workflow-canvas-summary {
+  display: inline-flex;
+  height: 2.25rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--background) 94%, transparent);
+  padding: 0 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  backdrop-filter: blur(8px);
+}
+
+.workflow-canvas-flow .react-flow__controls {
+  background: var(--background);
+}
+
+.workflow-canvas-flow .react-flow__controls-button {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-bottom-color: var(--border);
+  transition:
+    background-color 160ms ease-out,
+    color 160ms ease-out;
+}
+
+.workflow-canvas-flow .react-flow__controls-button:hover {
+  background: var(--muted);
+}
+
+.workflow-canvas-flow .react-flow__controls-button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.workflow-canvas-minimap {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+@media (pointer: coarse) {
+  .workflow-canvas-flow .react-flow__controls-button {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workflow-canvas-flow .react-flow__controls-button,
+  .workflow-canvas-flow .react-flow__node-step > * {
+    transition-duration: 0ms !important;
+  }
 }
 
 .workflow-canvas-flow .react-flow__node-default,

@@ -8,6 +8,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 Database types
 Derive database types from the Drizzle schema — never hand-write custom or partial shapes for table rows. Export typeof table.$inferSelect (and $inferInsert when needed) from lib/schema.ts and import it. When a consumer needs only some columns, narrow with Pick<Row, ...> / Omit<Row, ...> rather than redeclaring a literal type. Don't add an insert type where db.insert(...).values() already enforces the shape.
 
+React Flow
+Before writing or changing code that uses React Flow, review https://reactflow.dev/llms.txt for current documentation, API guidance, migrations, examples, and testing recommendations. Do not rely solely on training data for React Flow APIs or conventions.
+
 <!-- TRIGGER.DEV SKILLS START -->
 ## Trigger.dev agent skills
 
