@@ -13,8 +13,12 @@ import {
   type DefaultEdgeOptions,
   type Edge,
   type NodeTypes,
+  type OnConnect,
+  type OnDelete,
+  type OnEdgesChange,
+  type OnNodesChange,
 } from "@xyflow/react"
-import { useLiveblocksFlow, Cursors } from "@liveblocks/react-flow"
+import { Cursors } from "@liveblocks/react-flow"
 import { GitBranchIcon } from "lucide-react"
 import { useTheme } from "next-themes"
 import "@xyflow/react/dist/style.css"
@@ -27,7 +31,16 @@ import {
 } from "@/features/workflows/nodes/node-registry"
 
 type WorkflowNode = StepNodeType
-type WorkflowEdge = Edge
+export type WorkflowEdge = Edge
+
+type WorkflowCanvasProps = {
+  nodes: WorkflowNode[]
+  edges: WorkflowEdge[]
+  onNodesChange: OnNodesChange<WorkflowNode>
+  onEdgesChange: OnEdgesChange<WorkflowEdge>
+  onConnect: OnConnect
+  onDelete: OnDelete<WorkflowNode, WorkflowEdge>
+}
 
 const nodeTypes = {
   step: StepNode,
@@ -47,7 +60,7 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
   },
 }
 
-const initialNodes: WorkflowNode[] = [
+export const initialNodes: WorkflowNode[] = [
   createStepNode({
     id: "start",
     type: "start",
@@ -61,7 +74,7 @@ const initialNodes: WorkflowNode[] = [
   }),
 ]
 
-const initialEdges: WorkflowEdge[] = [
+export const initialEdges: WorkflowEdge[] = [
   {
     id: "start-open-url",
     source: "start",
@@ -82,15 +95,16 @@ function useIsHydrated() {
   )
 }
 
-export function WorkflowCanvas() {
+export function WorkflowCanvas({
+  nodes,
+  edges,
+  onNodesChange,
+  onEdgesChange,
+  onConnect,
+  onDelete,
+}: WorkflowCanvasProps) {
   const { resolvedTheme } = useTheme()
   const isHydrated = useIsHydrated()
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, onDelete } =
-    useLiveblocksFlow<WorkflowNode, WorkflowEdge>({
-      suspense: true,
-      nodes: { initial: initialNodes },
-      edges: { initial: initialEdges },
-    })
   const colorMode = isHydrated && resolvedTheme === "dark" ? "dark" : "light"
 
   return (

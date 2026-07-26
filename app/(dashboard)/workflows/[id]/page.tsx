@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server"
+import type { CreateRoomOptions } from "@liveblocks/node"
 import { notFound } from "next/navigation"
 
 import { getWorkflow } from "@/feature/workflows/data"
@@ -14,22 +15,30 @@ type WorkflowPageProps = {
 
 export default async function WorkflowPage({ params }: WorkflowPageProps) {
   const { id } = await params
-  const { orgId } = await auth()
+  const { orgId, userId } = await auth()
 
-  if (!orgId || !(await getWorkflow(orgId, id))) {
+  if (!orgId || !userId || !(await getWorkflow(orgId, id))) {
     notFound()
   }
 
-  await liveblocks.getOrCreateRoom(id, {
+  const roomId = `workflow:${orgId}:v2:${id}`
+  const roomAccess = {
     defaultAccesses: [],
     groupsAccesses: {
       [orgId]: ["room:write"],
     },
+    usersAccesses: {
+      [userId]: ["room:write"],
+    },
+  } satisfies Omit<CreateRoomOptions, "organizationId">
+
+  await liveblocks.getOrCreateRoom(roomId, {
+    ...roomAccess,
     organizationId: orgId,
   })
 
   return (
-    <Room roomid={id}>
+    <Room roomid={roomId}>
       <WorkflowShell workflowId={id} />
     </Room>
   )

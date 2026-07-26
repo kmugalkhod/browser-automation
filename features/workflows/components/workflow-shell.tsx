@@ -1,17 +1,31 @@
+"use client"
+
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import { ReactFlowProvider } from "@xyflow/react"
+import { ReactFlowProvider, type Edge } from "@xyflow/react"
+import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import { RightSidebar } from "@/features/workflows/components/right-sidebar"
-import { WorkflowCanvas } from "@/features/workflows/components/workflow-canvas"
+import {
+  initialEdges,
+  initialNodes,
+  WorkflowCanvas,
+} from "@/features/workflows/components/workflow-canvas"
+import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 
 type WorkflowShellProps = {
   workflowId: string
 }
 
 export function WorkflowShell({ workflowId }: WorkflowShellProps) {
+  const flow = useLiveblocksFlow<StepNodeType, Edge>({
+    suspense: true,
+    nodes: { initial: initialNodes },
+    edges: { initial: initialEdges },
+  })
+
   return (
     <ReactFlowProvider>
       <main className="size-full min-h-0 bg-background text-foreground">
@@ -27,7 +41,7 @@ export function WorkflowShell({ workflowId }: WorkflowShellProps) {
               className="size-full"
             >
               <ResizablePanel id="canvas" minSize="18rem">
-                <WorkflowCanvas />
+                <WorkflowCanvas {...flow} />
               </ResizablePanel>
               <ResizableHandle />
               <ResizablePanel id="logs" defaultSize="8rem" minSize="6rem">
@@ -44,7 +58,10 @@ export function WorkflowShell({ workflowId }: WorkflowShellProps) {
             minSize="14rem"
             maxSize="36rem"
           >
-            <RightSidebar workflowId={workflowId} />
+            <RightSidebar
+              workflowId={workflowId}
+              onNodesChange={flow.onNodesChange}
+            />
           </ResizablePanel>
         </ResizablePanelGroup>
       </main>

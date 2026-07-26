@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { useReactFlow, useStore } from "@xyflow/react"
+import { useReactFlow, useStore, type OnNodesChange } from "@xyflow/react"
 import { Play } from "lucide-react"
 import { toast } from "sonner"
 
@@ -18,6 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { runWorkflowAction } from "@/feature/workflows/actions"
 import {
   nodeRegistry,
+  createStepNode,
   type NodeDefinition,
   type NodeField,
   type NodeType,
@@ -31,6 +32,23 @@ const sections: { kind: StepNodeKind; label: string }[] = [
 ]
 
 const definitions = Object.values(nodeRegistry)
+
+const nodeWidth = 224
+const nodeHeight = 56
+const nodeGap = 48
+const placementOffsets = Array.from({ length: 17 * 17 }, (_, index) => {
+  const row = Math.floor(index / 17) - 8
+  const column = (index % 17) - 8
+
+  return { column, row }
+}).sort(
+  (first, second) =>
+    Math.abs(first.column) +
+      Math.abs(first.row) -
+      (Math.abs(second.column) + Math.abs(second.row)) ||
+    Math.abs(first.row) - Math.abs(second.row) ||
+    second.column - first.column
+)
 
 function NodeIcon({ type, className }: { type: NodeType; className?: string }) {
   const Icon = nodeRegistry[type].icon
@@ -123,8 +141,13 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
   )
 }
 
-function Palette() {
-  const { addNodes, getNodes, getViewport } = useReactFlow<StepNodeType>()
+function Palette({
+  onNodesChange,
+}: {
+  onNodesChange: OnNodesChange<StepNodeType>
+}) {
+  const { getIntersectingNodes, getNodes, getViewport } =
+    useReactFlow<StepNodeType>()
   const width = useStore((state) => state.width)
   const height = useStore((state) => state.height)
 
@@ -142,21 +165,36 @@ function Palette() {
 
     const count = nodes.filter((node) => node.data.type === type).length
     const { x, y, zoom } = getViewport()
+    const center = {
+      x: (width / 2 - x) / zoom,
+      y: (height / 2 - y) / zoom,
+    }
+    const position =
+      placementOffsets
+        .map(({ column, row }) => ({
+          x: center.x - nodeWidth / 2 + column * (nodeWidth + nodeGap),
+          y: center.y - nodeHeight / 2 + row * (nodeHeight + nodeGap),
+        }))
+        .find(
+          (candidate) =>
+            getIntersectingNodes({
+              ...candidate,
+              width: nodeWidth,
+              height: nodeHeight,
+            }).length === 0
+        ) ?? center
 
-    addNodes({
-      id: crypto.randomUUID(),
-      type: "step",
-      position: {
-        x: (width / 2 - x) / zoom,
-        y: (height / 2 - y) / zoom,
+    onNodesChange([
+      {
+        type: "add",
+        item: createStepNode({
+          id: crypto.randomUUID(),
+          type,
+          position,
+          title: `${definition.label} ${count + 1}`,
+        }),
       },
-      data: {
-        type,
-        kind: definition.kind,
-        title: `${definition.label} ${count + 1}`,
-        values: {},
-      },
-    })
+    ])
   }
 
   return (
@@ -222,7 +260,13 @@ function RunButton({ workflowId }: { workflowId: string }) {
   )
 }
 
-export function RightSidebar({ workflowId }: { workflowId: string }) {
+export function RightSidebar({
+  workflowId,
+  onNodesChange,
+}: {
+  workflowId: string
+  onNodesChange: OnNodesChange<StepNodeType>
+}) {
   const [tab, setTab] = useState("toolbar")
   const selected = useStore((state) =>
     state.nodes.find((node) => node.selected)
@@ -252,7 +296,7 @@ export function RightSidebar({ workflowId }: { workflowId: string }) {
         </TabsTrigger>
       </TabsList>
       <TabsContent value="toolbar" className="flex min-h-0 flex-1 flex-col">
-        <Palette />
+        <Palette onNodesChange={onNodesChange} />
       </TabsContent>
       <TabsContent value="editor" className="flex min-h-0 flex-1 flex-col">
         <Inspector node={selected} />
