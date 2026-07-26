@@ -1,8 +1,9 @@
 "use client"
 
 import { useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { useReactFlow, useStore, type OnNodesChange } from "@xyflow/react"
-import { Play } from "lucide-react"
+import { Ellipsis, Play, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -12,11 +13,21 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
-import { runWorkflowAction } from "@/feature/workflows/actions"
+import {
+  deleteWorkflowAction,
+  runWorkflowAction,
+} from "@/feature/workflows/actions"
 import {
   nodeRegistry,
   createStepNode,
@@ -92,17 +103,16 @@ function Field({
     value,
     placeholder: field.placeholder,
     required: field.required,
-    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-      onChange(event.target.value),
+    onChange: (
+      event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => onChange(event.target.value),
   }
 
   if (field.multiline) {
     return <Textarea {...inputProps} rows={5} className="min-h-28 resize-y" />
   }
 
-  return (
-    <Input {...inputProps} />
-  )
+  return <Input {...inputProps} />
 }
 
 function Inspector({ node }: { node: StepNodeType | undefined }) {
@@ -280,6 +290,43 @@ function RunButton({ workflowId }: { workflowId: string }) {
   )
 }
 
+function WorkflowActionsMenu({ workflowId }: { workflowId: string }) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label="Workflow actions"
+        disabled={isPending}
+        className="inline-flex size-7 items-center justify-center rounded-[min(var(--radius-md),12px)] outline-none hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50"
+      >
+        <Ellipsis />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          variant="destructive"
+          disabled={isPending}
+          onClick={() => {
+            startTransition(async () => {
+              try {
+                await deleteWorkflowAction(workflowId)
+                toast.success("Workflow deleted.")
+                router.replace("/")
+              } catch {
+                toast.error("Couldn't delete the workflow.")
+              }
+            })
+          }}
+        >
+          {isPending ? <Spinner /> : <Trash2 />}
+          {isPending ? "Deleting workflow..." : "Delete workflow"}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export function RightSidebar({
   workflowId,
   onNodesChange,
@@ -301,8 +348,9 @@ export function RightSidebar({
       onValueChange={onTabChange}
       className="size-full min-h-0 gap-0 bg-background"
     >
-      <div className="flex items-center justify-end border-b border-border p-2">
+      <div className="flex items-center justify-end gap-1 border-b border-border p-2">
         <RunButton workflowId={workflowId} />
+        <WorkflowActionsMenu workflowId={workflowId} />
       </div>
       <TabsList className="m-2 w-fit bg-background">
         <TabsTrigger

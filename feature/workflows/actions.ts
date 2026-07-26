@@ -9,6 +9,7 @@ import { redirect } from "next/navigation"
 import { db } from "@/db"
 import { workflows } from "@/db/schema"
 import { createworkflow as creativeWorkflow } from "@/feature/workflows/data"
+import { liveblocks } from "@/lib/liveblocks"
 import type { helloWorldTask } from "@/src/trigger/example"
 
 const terminalRunStatuses = new Set([
@@ -43,6 +44,36 @@ export async function createWorkflowAction(name: string) {
 }
 
 export const createWorkFlowsAction = createWorkflowAction
+
+export async function deleteWorkflowAction(workflowId: string) {
+  const { orgId } = await auth()
+
+  if (!orgId) {
+    throw new Error("An active organization is required to delete a workflow")
+  }
+
+  const [workflow] = await db
+    .select({ id: workflows.id })
+    .from(workflows)
+    .where(
+      and(eq(workflows.id, workflowId), eq(workflows.organizationId, orgId))
+    )
+    .limit(1)
+
+  if (!workflow) {
+    throw new Error("Workflow not found")
+  }
+
+  await liveblocks.deleteRoom(`workflow:${orgId}:v2:${workflow.id}`)
+
+  await db
+    .delete(workflows)
+    .where(
+      and(eq(workflows.id, workflowId), eq(workflows.organizationId, orgId))
+    )
+
+  revalidatePath("/(dashboard)", "layout")
+}
 
 async function getWorkflowForRunAction(workflowId: string) {
   const { orgId } = await auth.protect()

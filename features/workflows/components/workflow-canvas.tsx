@@ -26,10 +26,7 @@ import "@xyflow/react/dist/style.css"
 import "@liveblocks/react-ui/styles.css"
 import "@liveblocks/react-flow/styles.css"
 import { StepNode } from "@/features/workflows/components/step-node"
-import {
-  createStepNode,
-  type StepNodeType,
-} from "@/features/workflows/nodes/node-registry"
+import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
 
 type WorkflowNode = StepNodeType
 export type WorkflowEdge = Edge
@@ -62,28 +59,9 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
   },
 }
 
-export const initialNodes: WorkflowNode[] = [
-  createStepNode({
-    id: "start",
-    type: "start",
-    position: { x: 0, y: 0 },
-  }),
-  createStepNode({
-    id: "open-url",
-    type: "open-url",
-    position: { x: 280, y: 0 },
-    values: { url: "https://youtube.com" },
-  }),
-]
+export const initialNodes: WorkflowNode[] = []
 
-export const initialEdges: WorkflowEdge[] = [
-  {
-    id: "start-open-url",
-    source: "start",
-    target: "open-url",
-    type: edgeType,
-  },
-]
+export const initialEdges: WorkflowEdge[] = []
 
 const subscribeToHydration = () => () => {}
 const getClientSnapshot = () => true
