@@ -3,6 +3,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
+import { ReactFlowProvider } from "@xyflow/react"
 import { RightSidebar } from "@/features/workflows/components/right-sidebar"
 import { WorkflowCanvas } from "@/features/workflows/components/workflow-canvas"
 
@@ -12,39 +13,41 @@ type WorkflowShellProps = {
 
 export function WorkflowShell({ workflowId }: WorkflowShellProps) {
   return (
-    <main className="size-full min-h-0 bg-background text-foreground">
-      <ResizablePanelGroup
-        id={`workflow-${workflowId}-shell`}
-        orientation="horizontal"
-        className="size-full"
-      >
-        <ResizablePanel id="primary" minSize="30rem">
-          <ResizablePanelGroup
-            id={`workflow-${workflowId}-primary`}
-            orientation="vertical"
-            className="size-full"
-          >
-            <ResizablePanel id="canvas" minSize="18rem">
-              <WorkflowCanvas />
-            </ResizablePanel>
-            <ResizableHandle />
-            <ResizablePanel id="logs" defaultSize="8rem" minSize="6rem">
-              <div className="flex size-full items-center justify-center bg-background text-sm font-medium text-muted-foreground">
-                Logs
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </ResizablePanel>
-        <ResizableHandle />
-        <ResizablePanel
-          id="inspector"
-          defaultSize="16rem"
-          minSize="14rem"
-          maxSize="36rem"
+    <ReactFlowProvider>
+      <main className="size-full min-h-0 bg-background text-foreground">
+        <ResizablePanelGroup
+          id={`workflow-${workflowId}-shell`}
+          orientation="horizontal"
+          className="size-full"
         >
-          <RightSidebar workflowId={workflowId} />
-        </ResizablePanel>
-      </ResizablePanelGroup>
-    </main>
+          <ResizablePanel id="primary" minSize="30rem">
+            <ResizablePanelGroup
+              id={`workflow-${workflowId}-primary`}
+              orientation="vertical"
+              className="size-full"
+            >
+              <ResizablePanel id="canvas" minSize="18rem">
+                <WorkflowCanvas />
+              </ResizablePanel>
+              <ResizableHandle />
+              <ResizablePanel id="logs" defaultSize="8rem" minSize="6rem">
+                <div className="flex size-full items-center justify-center bg-background text-sm font-medium text-muted-foreground">
+                  Logs
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </ResizablePanel>
+          <ResizableHandle />
+          <ResizablePanel
+            id="inspector"
+            defaultSize="16rem"
+            minSize="14rem"
+            maxSize="36rem"
+          >
+            <RightSidebar workflowId={workflowId} />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </main>
+    </ReactFlowProvider>
   )
 }

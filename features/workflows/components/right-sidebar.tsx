@@ -1,153 +1,262 @@
 "use client"
 
-import { useEffect, useState, useTransition } from "react"
-import { PlayIcon } from "lucide-react"
+import { useState, useTransition } from "react"
+import { useReactFlow, useStore } from "@xyflow/react"
+import { Play } from "lucide-react"
+import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Spinner } from "@/components/ui/spinner"
 import {
-  getWorkflowRunStatusAction,
-  runWorkflowAction,
-} from "@/feature/workflows/actions"
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { runWorkflowAction } from "@/feature/workflows/actions"
+import {
+  nodeRegistry,
+  type NodeDefinition,
+  type NodeField,
+  type NodeType,
+  type StepNodeKind,
+  type StepNodeType,
+} from "@/features/workflows/nodes/node-registry"
 
-type RightSidebarProps = {
-  workflowId: string
+const sections: { kind: StepNodeKind; label: string }[] = [
+  { kind: "trigger", label: "Triggers" },
+  { kind: "action", label: "Actions" },
+]
+
+const definitions = Object.values(nodeRegistry)
+
+function NodeIcon({ type, className }: { type: NodeType; className?: string }) {
+  const Icon = nodeRegistry[type].icon
+
+  return <Icon aria-hidden="true" className={className ?? "size-4"} />
 }
 
-type WorkflowRunStatus = {
-  id: string
-  status: string
-  taskIdentifier: string
-  isTerminal: boolean
-  isSuccess?: boolean
-  isFailed?: boolean
-  isCancelled?: boolean
-  outputMessage?: string
-  errorMessage?: string
-  updatedAt?: string
-  finishedAt?: string | null
+function Section({
+  title,
+  icon,
+  children,
+}: {
+  title: string
+  icon?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <section className="flex min-h-0 flex-1 flex-col">
+      <div className="flex items-center gap-2 border-y border-border bg-card px-3 py-1.5 text-sm font-semibold">
+        {icon}
+        {title}
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+    </section>
+  )
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Failed to run workflow"
+function Field({
+  field,
+  value,
+  onChange,
+}: {
+  field: NodeField
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <Input
+      id={field.key}
+      value={value}
+      placeholder={field.placeholder}
+      onChange={(event) => onChange(event.target.value)}
+    />
+  )
 }
 
-function getRunLabel(run: WorkflowRunStatus | null, isStarting: boolean) {
-  if (isStarting) {
-    return "Starting"
+function Inspector({ node }: { node: StepNodeType | undefined }) {
+  const { updateNodeData } = useReactFlow<StepNodeType>()
+
+  if (!node) {
+    return (
+      <Section title="Editor">
+        <p className="p-3 text-sm text-muted-foreground">
+          Select a node to edit it.
+        </p>
+      </Section>
+    )
   }
 
-  if (!run) {
-    return "Run"
-  }
+  const { type, title, values } = node.data
+  const definition: NodeDefinition = nodeRegistry[type]
 
-  if (run.isTerminal) {
-    return "Run again"
-  }
-
-  return "Running"
+  return (
+    <Section title={title} icon={<NodeIcon type={type} />}>
+      <div className="flex flex-col gap-3 p-3">
+        {definition.fields.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            This node has no properties.
+          </p>
+        ) : (
+          definition.fields.map((field) => (
+            <div key={field.key} className="flex flex-col gap-1.5">
+              <Label htmlFor={field.key} className="text-xs">
+                {field.label}
+              </Label>
+              <Field
+                field={field}
+                value={values[field.key] ?? ""}
+                onChange={(value) => {
+                  updateNodeData(node.id, {
+                    values: { ...values, [field.key]: value },
+                  })
+                }}
+              />
+            </div>
+          ))
+        )}
+      </div>
+    </Section>
+  )
 }
 
-export function RightSidebar({ workflowId }: RightSidebarProps) {
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [run, setRun] = useState<WorkflowRunStatus | null>(null)
-  const [isStartingWorkflow, startRunWorkflowTransition] = useTransition()
-  const hasActiveRun = Boolean(run && !run.isTerminal)
-  const runId = run?.id ?? null
-  const isRunTerminal = run?.isTerminal ?? true
+function Palette() {
+  const { addNodes, getNodes, getViewport } = useReactFlow<StepNodeType>()
+  const width = useStore((state) => state.width)
+  const height = useStore((state) => state.height)
 
-  useEffect(() => {
-    if (!runId || isRunTerminal) {
+  const addNode = (type: NodeType) => {
+    const definition = nodeRegistry[type]
+    const nodes = getNodes()
+
+    if (
+      definition.kind === "trigger" &&
+      nodes.some((node) => node.data.kind === "trigger")
+    ) {
+      toast.error("A workflow can only have one trigger.")
       return
     }
 
-    const activeRunId = runId
-    let isCanceled = false
-    let isCheckingStatus = false
+    const count = nodes.filter((node) => node.data.type === type).length
+    const { x, y, zoom } = getViewport()
 
-    async function refreshRunStatus() {
-      if (isCheckingStatus) {
-        return
-      }
-
-      isCheckingStatus = true
-
-      try {
-        const nextRun = await getWorkflowRunStatusAction(
-          workflowId,
-          activeRunId
-        )
-
-        if (!isCanceled) {
-          setRun(nextRun)
-        }
-      } catch (error) {
-        if (!isCanceled) {
-          setErrorMessage(getErrorMessage(error))
-        }
-      } finally {
-        isCheckingStatus = false
-      }
-    }
-
-    void refreshRunStatus()
-    const interval = window.setInterval(refreshRunStatus, 1500)
-
-    return () => {
-      isCanceled = true
-      window.clearInterval(interval)
-    }
-  }, [isRunTerminal, runId, workflowId])
-
-  function handleRunWorkflow() {
-    setErrorMessage(null)
-
-    startRunWorkflowTransition(async () => {
-      try {
-        const nextRun = await runWorkflowAction(workflowId)
-        setRun(nextRun)
-      } catch (error) {
-        setErrorMessage(getErrorMessage(error))
-      }
+    addNodes({
+      id: crypto.randomUUID(),
+      type: "step",
+      position: {
+        x: (width / 2 - x) / zoom,
+        y: (height / 2 - y) / zoom,
+      },
+      data: {
+        type,
+        kind: definition.kind,
+        title: `${definition.label} ${count + 1}`,
+        values: {},
+      },
     })
   }
 
   return (
-    <aside className="flex size-full flex-col items-center justify-center gap-3 bg-background px-4">
-      <Button
-        type="button"
-        aria-busy={isStartingWorkflow || hasActiveRun}
-        disabled={isStartingWorkflow || hasActiveRun}
-        onClick={handleRunWorkflow}
+    <Section title="Toolbar">
+      <Accordion
+        multiple
+        defaultValue={sections.map((section) => section.kind)}
+        className="px-3 py-2"
       >
-        {isStartingWorkflow || hasActiveRun ? (
-          <Spinner data-icon="inline-start" />
-        ) : (
-          <PlayIcon data-icon="inline-start" />
-        )}
-        {getRunLabel(run, isStartingWorkflow)}
-      </Button>
-      {run ? (
-        <div className="flex max-w-full flex-col items-center gap-1 text-center text-sm">
-          <p className="font-medium text-foreground">{run.status}</p>
-          <p className="max-w-full truncate font-mono text-xs text-muted-foreground">
-            {run.id}
-          </p>
-          {run.outputMessage ? (
-            <p className="max-w-full text-muted-foreground">
-              {run.outputMessage}
-            </p>
-          ) : null}
-          {run.errorMessage ? (
-            <p className="max-w-full text-destructive">{run.errorMessage}</p>
-          ) : null}
-        </div>
-      ) : null}
-      {errorMessage ? (
-        <p className="max-w-full text-center text-sm text-destructive">
-          {errorMessage}
-        </p>
-      ) : null}
-    </aside>
+        {sections.map((section) => (
+          <AccordionItem key={section.kind} value={section.kind}>
+            <AccordionTrigger className="py-2 text-xs font-medium text-muted-foreground hover:no-underline">
+              {section.label}
+            </AccordionTrigger>
+            <AccordionContent className="flex flex-col gap-0.5">
+              {definitions
+                .filter((definition) => definition.kind === section.kind)
+                .map((definition) => {
+                  const type = definition.type as NodeType
+
+                  return (
+                    <Button
+                      key={type}
+                      variant="ghost"
+                      onClick={() => addNode(type)}
+                      className="justify-start gap-2.5 px-1.5 text-xs"
+                    >
+                      <NodeIcon type={type} />
+                      {definition.label}
+                    </Button>
+                  )
+                })}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </Section>
+  )
+}
+
+function RunButton({ workflowId }: { workflowId: string }) {
+  const [isPending, startTransition] = useTransition()
+
+  return (
+    <Button
+      size="sm"
+      variant="secondary"
+      disabled={isPending}
+      onClick={() => {
+        startTransition(async () => {
+          try {
+            await runWorkflowAction(workflowId)
+            toast.success("Workflow started.")
+          } catch {
+            toast.error("Couldn't start the workflow.")
+          }
+        })
+      }}
+    >
+      <Play fill="currentColor" />
+      {isPending ? "Starting" : "Run"}
+    </Button>
+  )
+}
+
+export function RightSidebar({ workflowId }: { workflowId: string }) {
+  const [tab, setTab] = useState("toolbar")
+  const selected = useStore((state) =>
+    state.nodes.find((node) => node.selected)
+  ) as StepNodeType | undefined
+
+  return (
+    <Tabs
+      value={tab}
+      onValueChange={setTab}
+      className="size-full min-h-0 gap-0 bg-background"
+    >
+      <div className="flex items-center justify-end border-b border-border p-2">
+        <RunButton workflowId={workflowId} />
+      </div>
+      <TabsList className="m-2 w-fit bg-background">
+        <TabsTrigger
+          value="toolbar"
+          className="flex-none rounded-sm data-active:bg-accent! data-active:text-accent-foreground! data-active:shadow-none! dark:data-active:border-transparent!"
+        >
+          Toolbar
+        </TabsTrigger>
+        <TabsTrigger
+          value="editor"
+          className="flex-none rounded-sm data-active:bg-accent! data-active:text-accent-foreground! data-active:shadow-none! dark:data-active:border-transparent!"
+        >
+          Editor
+        </TabsTrigger>
+      </TabsList>
+      <TabsContent value="toolbar" className="flex min-h-0 flex-1 flex-col">
+        <Palette />
+      </TabsContent>
+      <TabsContent value="editor" className="flex min-h-0 flex-1 flex-col">
+        <Inspector node={selected} />
+      </TabsContent>
+    </Tabs>
   )
 }
