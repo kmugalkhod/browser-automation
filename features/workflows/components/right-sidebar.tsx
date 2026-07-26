@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useTransition } from "react"
 import { useReactFlow, useStore, type OnNodesChange } from "@xyflow/react"
 import { Play } from "lucide-react"
 import { toast } from "sonner"
@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
 import { runWorkflowAction } from "@/feature/workflows/actions"
 import {
   nodeRegistry,
@@ -34,7 +35,8 @@ const sections: { kind: StepNodeKind; label: string }[] = [
 const definitions = Object.values(nodeRegistry)
 
 const nodeWidth = 224
-const nodeHeight = 56
+const nodeHeaderHeight = 56
+const nodeFieldHeight = 29
 const nodeGap = 48
 const placementOffsets = Array.from({ length: 17 * 17 }, (_, index) => {
   const row = Math.floor(index / 17) - 8
@@ -85,13 +87,21 @@ function Field({
   value: string
   onChange: (value: string) => void
 }) {
+  const inputProps = {
+    id: field.key,
+    value,
+    placeholder: field.placeholder,
+    required: field.required,
+    onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      onChange(event.target.value),
+  }
+
+  if (field.multiline) {
+    return <Textarea {...inputProps} rows={5} className="min-h-28 resize-y" />
+  }
+
   return (
-    <Input
-      id={field.key}
-      value={value}
-      placeholder={field.placeholder}
-      onChange={(event) => onChange(event.target.value)}
-    />
+    <Input {...inputProps} />
   )
 }
 
@@ -123,6 +133,14 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
             <div key={field.key} className="flex flex-col gap-1.5">
               <Label htmlFor={field.key} className="text-xs">
                 {field.label}
+                {field.required && (
+                  <>
+                    <span aria-hidden="true" className="text-destructive">
+                      {" *"}
+                    </span>
+                    <span className="sr-only"> (required)</span>
+                  </>
+                )}
               </Label>
               <Field
                 field={field}
@@ -153,6 +171,8 @@ function Palette({
 
   const addNode = (type: NodeType) => {
     const definition = nodeRegistry[type]
+    const nodeHeight =
+      nodeHeaderHeight + definition.fields.length * nodeFieldHeight
     const nodes = getNodes()
 
     if (
@@ -263,11 +283,14 @@ function RunButton({ workflowId }: { workflowId: string }) {
 export function RightSidebar({
   workflowId,
   onNodesChange,
+  tab,
+  onTabChange,
 }: {
   workflowId: string
   onNodesChange: OnNodesChange<StepNodeType>
+  tab: string
+  onTabChange: (tab: string) => void
 }) {
-  const [tab, setTab] = useState("toolbar")
   const selected = useStore((state) =>
     state.nodes.find((node) => node.selected)
   ) as StepNodeType | undefined
@@ -275,7 +298,7 @@ export function RightSidebar({
   return (
     <Tabs
       value={tab}
-      onValueChange={setTab}
+      onValueChange={onTabChange}
       className="size-full min-h-0 gap-0 bg-background"
     >
       <div className="flex items-center justify-end border-b border-border p-2">

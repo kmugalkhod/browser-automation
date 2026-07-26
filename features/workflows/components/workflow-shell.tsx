@@ -1,11 +1,16 @@
 "use client"
 
+import { useState } from "react"
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable"
-import { ReactFlowProvider, type Edge } from "@xyflow/react"
+import {
+  ReactFlowProvider,
+  type Edge,
+  type NodeMouseHandler,
+} from "@xyflow/react"
 import { useLiveblocksFlow } from "@liveblocks/react-flow"
 import { RightSidebar } from "@/features/workflows/components/right-sidebar"
 import {
@@ -20,11 +25,14 @@ type WorkflowShellProps = {
 }
 
 export function WorkflowShell({ workflowId }: WorkflowShellProps) {
+  const [sidebarTab, setSidebarTab] = useState("toolbar")
   const flow = useLiveblocksFlow<StepNodeType, Edge>({
     suspense: true,
     nodes: { initial: initialNodes },
     edges: { initial: initialEdges },
   })
+  const openNodeEditor: NodeMouseHandler<StepNodeType> = () =>
+    setSidebarTab("editor")
 
   return (
     <ReactFlowProvider>
@@ -41,7 +49,7 @@ export function WorkflowShell({ workflowId }: WorkflowShellProps) {
               className="size-full"
             >
               <ResizablePanel id="canvas" minSize="18rem">
-                <WorkflowCanvas {...flow} />
+                <WorkflowCanvas {...flow} onNodeClick={openNodeEditor} />
               </ResizablePanel>
               <ResizableHandle />
               <ResizablePanel id="logs" defaultSize="8rem" minSize="6rem">
@@ -61,6 +69,8 @@ export function WorkflowShell({ workflowId }: WorkflowShellProps) {
             <RightSidebar
               workflowId={workflowId}
               onNodesChange={flow.onNodesChange}
+              tab={sidebarTab}
+              onTabChange={setSidebarTab}
             />
           </ResizablePanel>
         </ResizablePanelGroup>

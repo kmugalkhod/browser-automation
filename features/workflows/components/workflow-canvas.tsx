@@ -16,6 +16,7 @@ import {
   type OnConnect,
   type OnDelete,
   type OnEdgesChange,
+  type NodeMouseHandler,
   type OnNodesChange,
 } from "@xyflow/react"
 import { Cursors } from "@liveblocks/react-flow"
@@ -40,6 +41,7 @@ type WorkflowCanvasProps = {
   onEdgesChange: OnEdgesChange<WorkflowEdge>
   onConnect: OnConnect
   onDelete: OnDelete<WorkflowNode, WorkflowEdge>
+  onNodeClick: NodeMouseHandler<WorkflowNode>
 }
 
 const nodeTypes = {
@@ -102,6 +104,7 @@ export function WorkflowCanvas({
   onEdgesChange,
   onConnect,
   onDelete,
+  onNodeClick,
 }: WorkflowCanvasProps) {
   const { resolvedTheme } = useTheme()
   const isHydrated = useIsHydrated()
@@ -119,6 +122,7 @@ export function WorkflowCanvas({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onDelete={onDelete}
+        onNodeClick={onNodeClick}
         defaultEdgeOptions={defaultEdgeOptions}
         connectionLineType={ConnectionLineType.SmoothStep}
         connectionLineStyle={defaultEdgeOptions.style}

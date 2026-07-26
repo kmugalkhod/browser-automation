@@ -8,7 +8,7 @@ import {
 import { cn } from "@/lib/utils"
 
 function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
-  const { type, kind, title } = data
+  const { type, kind, title, values } = data
   const def = nodeRegistry[type]
   const Icon = def.icon
 
@@ -49,6 +49,34 @@ function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
           </span>
         </div>
       </div>
+
+      {def.fields.length > 0 && (
+        <div className="border-t border-border px-3 py-1.5">
+          {def.fields.map((field) => {
+            const value = values[field.key]
+
+            return (
+              <div
+                key={field.key}
+                className="flex min-w-0 items-center gap-2 text-xs"
+              >
+                <span className="shrink-0 text-muted-foreground">
+                  {field.label}
+                </span>
+                <span
+                  title={value}
+                  className={cn(
+                    "truncate font-medium",
+                    value ? "text-foreground" : "text-muted-foreground"
+                  )}
+                >
+                  {value || "Not set"}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       <Handle
         type="source"
