@@ -2,7 +2,8 @@ import { auth } from "@clerk/nextjs/server"
 import { and, desc, eq } from "drizzle-orm"
 
 import { db } from "@/db"
-import { workflows } from "@/db/schema"
+import { type WorkflowGraph, workflows } from "@/db/schema"
+import { validateGraph } from "@/feature/workflows/lib/validateGraph"
 
 function createWorkflowSlug(name: string) {
   const slug = name
@@ -26,9 +27,7 @@ export async function getWorkflow(orgId: string, id: string) {
   const [workflow] = await db
     .select()
     .from(workflows)
-    .where(
-      and(eq(workflows.id, id), eq(workflows.organizationId, orgId))
-    )
+    .where(and(eq(workflows.id, id), eq(workflows.organizationId, orgId)))
     .limit(1)
 
   return workflow
@@ -53,4 +52,27 @@ export async function createworkflow(orgId: string, name: string) {
     .returning()
 
   return workflow
+}
+
+export async function saveWorkflowGraph({
+  organizationId,
+  id,
+  graph,
+}: {
+  organizationId: string
+  id: string
+  graph: WorkflowGraph
+}) {
+  const problems = validateGraph(graph)
+
+  if (problems.length > 0) {
+    throw new Error(problems.join(" "))
+  }
+
+  await db
+    .update(workflows)
+    .set({ graph, updatedAt: new Date() })
+    .where(
+      and(eq(workflows.id, id), eq(workflows.organizationId, organizationId))
+    )
 }

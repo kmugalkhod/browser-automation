@@ -28,6 +28,7 @@ import {
   deleteWorkflowAction,
   runWorkflowAction,
 } from "@/feature/workflows/actions"
+import { validateGraph } from "@/feature/workflows/lib/validateGraph"
 import {
   nodeRegistry,
   createStepNode,
@@ -266,6 +267,7 @@ function Palette({
 }
 
 function RunButton({ workflowId }: { workflowId: string }) {
+  const { getEdges, getNodes } = useReactFlow<StepNodeType>()
   const [isPending, startTransition] = useTransition()
 
   return (
@@ -274,9 +276,20 @@ function RunButton({ workflowId }: { workflowId: string }) {
       variant="secondary"
       disabled={isPending}
       onClick={() => {
+        const graph = {
+          nodes: getNodes(),
+          edges: getEdges(),
+        }
+        const problems = validateGraph(graph)
+
+        if (problems.length > 0) {
+          toast.error(problems[0])
+          return
+        }
+
         startTransition(async () => {
           try {
-            await runWorkflowAction(workflowId)
+            await runWorkflowAction({ id: workflowId, graph })
             toast.success("Workflow started.")
           } catch {
             toast.error("Couldn't start the workflow.")

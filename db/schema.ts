@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm"
+import type { Edge } from "@xyflow/react"
 import {
   index,
   jsonb,
@@ -8,6 +9,13 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core"
+
+import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
+
+export type WorkflowGraph = {
+  nodes: StepNodeType[]
+  edges: Edge[]
+}
 
 export const workflows = pgTable(
   "workflows",
@@ -22,6 +30,7 @@ export const workflows = pgTable(
       .$type<Record<string, unknown>>()
       .notNull()
       .default(sql`'{}'::jsonb`),
+    graph: jsonb("graph").$type<WorkflowGraph>(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),

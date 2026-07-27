@@ -7,10 +7,13 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { db } from "@/db"
-import { workflows } from "@/db/schema"
-import { createworkflow as creativeWorkflow } from "@/feature/workflows/data"
+import { type WorkflowGraph, workflows } from "@/db/schema"
+import {
+  createworkflow as creativeWorkflow,
+  saveWorkflowGraph,
+} from "@/feature/workflows/data"
 import { liveblocks } from "@/lib/liveblocks"
-import type { helloWorldTask } from "@/src/trigger/example"
+import type { runWorkflowTask } from "@/features/workflows/tasks/run-workflow"
 
 const terminalRunStatuses = new Set([
   "COMPLETED",
@@ -100,23 +103,37 @@ async function getWorkflowForRunAction(workflowId: string) {
   return workflow
 }
 
-export async function runWorkflowAction(workflowId: string) {
-  const workflow = await getWorkflowForRunAction(workflowId)
+export async function runWorkflowAction({
+  id,
+  graph,
+}: {
+  id: string
+  graph: WorkflowGraph
+}) {
+  const { orgId } = await auth.protect()
 
-  const handle = await tasks.trigger<typeof helloWorldTask>(
-    "hello-world",
+  if (!orgId) {
+    throw new Error("An active organization is required to run a workflow")
+  }
+
+  await saveWorkflowGraph({ organizationId: orgId, id, graph })
+  const workflow = await getWorkflowForRunAction(id)
+
+  const handle = await tasks.trigger<typeof runWorkflowTask>(
+    "run-workflow",
     {
-      message: `Run workflow ${workflow.name} (${workflow.id})`,
+      workflowId: workflow.id,
+      organizationId: orgId,
     },
     {
-      tags: [`workflow_${workflow.id}`],
+      tags: [`workflow:${workflow.id}`],
     }
   )
 
   return {
     id: handle.id,
     status: "QUEUED",
-    taskIdentifier: "hello-world",
+    taskIdentifier: "run-workflow",
     isTerminal: false,
   }
 }
@@ -126,9 +143,9 @@ export async function getWorkflowRunStatusAction(
   runId: string
 ) {
   const workflow = await getWorkflowForRunAction(workflowId)
-  const run = await runs.retrieve<typeof helloWorldTask>(runId)
+  const run = await runs.retrieve<typeof runWorkflowTask>(runId)
 
-  if (!run.tags.includes(`workflow_${workflow.id}`)) {
+  if (!run.tags.includes(`workflow:${workflow.id}`)) {
     throw new Error("Run does not belong to this workflow")
   }
 
@@ -140,9 +157,19 @@ export async function getWorkflowRunStatusAction(
     isSuccess: run.isSuccess,
     isFailed: run.isFailed,
     isCancelled: run.isCancelled,
-    outputMessage: run.output?.message,
+    outputSteps: run.output?.steps,
     errorMessage: run.error?.message,
     updatedAt: run.updatedAt.toISOString(),
     finishedAt: run.finishedAt?.toISOString() ?? null,
   }
+}
+
+export async function cancelWorkflowAction(runId: string) {
+  const { orgId } = await auth.protect()
+
+  if (!orgId) {
+    throw new Error("An active organization is required to cancel a workflow")
+  }
+
+  await runs.cancel(runId)
 }
