@@ -1,8 +1,8 @@
 import { logger, task } from "@trigger.dev/sdk"
 import toposort from "toposort"
 
-import { getWorkflow } from "@/feature/workflows/data"
-import { validateGraph } from "@/feature/workflows/lib/validateGraph"
+import { getWorkflow } from "@/features/workflows/data"
+import { validateGraph } from "@/features/workflows/lib/validateGraph"
 
 export const runWorkflowTask = task({
   id: "run-workflow",

@@ -3,7 +3,7 @@ import { and, desc, eq } from "drizzle-orm"
 
 import { db } from "@/db"
 import { type WorkflowGraph, workflows } from "@/db/schema"
-import { validateGraph } from "@/feature/workflows/lib/validateGraph"
+import { validateGraph } from "@/features/workflows/lib/validateGraph"
 
 function createWorkflowSlug(name: string) {
   const slug = name

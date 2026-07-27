@@ -11,7 +11,7 @@ import { type WorkflowGraph, workflows } from "@/db/schema"
 import {
   createworkflow as creativeWorkflow,
   saveWorkflowGraph,
-} from "@/feature/workflows/data"
+} from "@/features/workflows/data"
 import { liveblocks } from "@/lib/liveblocks"
 import type { runWorkflowTask } from "@/features/workflows/tasks/run-workflow"
 

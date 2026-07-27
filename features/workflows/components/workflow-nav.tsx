@@ -22,7 +22,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import type { Workflow as WorkflowRecord } from "@/db/schema"
-import { generateSlug } from "@/feature/workflows/lib/generate-slug"
+import { generateSlug } from "@/features/workflows/lib/generate-slug"
 
 type CreateWorkflowAction = (name: string) => Promise<void>
 

@@ -10,9 +10,9 @@ import {
   SidebarHeader,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { createWorkflowAction } from "@/feature/workflows/actions"
-import { listworkflows } from "@/feature/workflows/data"
-import { WorkflowNav } from "@/feature/workflows/component/workflow-nav"
+import { createWorkflowAction } from "@/features/workflows/actions"
+import { listworkflows } from "@/features/workflows/data"
+import { WorkflowNav } from "@/features/workflows/components/workflow-nav"
 import { auth } from "@clerk/nextjs/server"
 
 export async function AppSidebar() {

@@ -28,8 +28,8 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   deleteWorkflowAction,
   runWorkflowAction,
-} from "@/feature/workflows/actions"
-import { validateGraph } from "@/feature/workflows/lib/validateGraph"
+} from "@/features/workflows/actions"
+import { validateGraph } from "@/features/workflows/lib/validateGraph"
 import type { runWorkflowTask } from "@/features/workflows/tasks/run-workflow"
 import {
   nodeRegistry,

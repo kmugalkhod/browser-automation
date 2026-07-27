@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server"
 import type { CreateRoomOptions } from "@liveblocks/node"
 import { notFound } from "next/navigation"
 
-import { getWorkflow } from "@/feature/workflows/data"
+import { getWorkflow } from "@/features/workflows/data"
 import { Room } from "@/features/workflows/components/room"
 import { WorkflowShell } from "@/features/workflows/components/workflow-shell"
 import { liveblocks } from "@/lib/liveblocks"
