@@ -2,6 +2,7 @@ import { logger, task } from "@trigger.dev/sdk"
 import toposort from "toposort"
 
 import { getWorkflow } from "@/feature/workflows/data"
+import { validateGraph } from "@/feature/workflows/lib/validateGraph"
 
 export const runWorkflowTask = task({
   id: "run-workflow",
@@ -19,6 +20,12 @@ export const runWorkflowTask = task({
     }
 
     const { nodes, edges } = workflow.graph
+    const problems = validateGraph(workflow.graph)
+
+    if (problems.length > 0) {
+      throw new Error(problems.join(" "))
+    }
+
     const nodesById = new Map(nodes.map((node) => [node.id, node]))
     const connectedNodeIds = new Set(
       edges.flatMap(({ source, target }) => [source, target])
