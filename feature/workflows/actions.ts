@@ -132,6 +132,7 @@ export async function runWorkflowAction({
 
   return {
     id: handle.id,
+    publicAccessToken: handle.publicAccessToken,
     status: "QUEUED",
     taskIdentifier: "run-workflow",
     isTerminal: false,

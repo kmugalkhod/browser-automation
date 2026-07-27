@@ -1,7 +1,8 @@
 "use client"
 
-import { useTransition } from "react"
+import { useCallback, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import { useRealtimeRun } from "@trigger.dev/react-hooks"
 import { useReactFlow, useStore, type OnNodesChange } from "@xyflow/react"
 import { Ellipsis, Play, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -29,6 +30,7 @@ import {
   runWorkflowAction,
 } from "@/feature/workflows/actions"
 import { validateGraph } from "@/feature/workflows/lib/validateGraph"
+import type { runWorkflowTask } from "@/features/workflows/tasks/run-workflow"
 import {
   nodeRegistry,
   createStepNode,
@@ -266,15 +268,65 @@ function Palette({
   )
 }
 
+type WorkflowRun = {
+  id: string
+  publicAccessToken: string
+}
+
+function WorkflowRunNotifier({
+  run,
+  onFinished,
+}: {
+  run: WorkflowRun
+  onFinished: () => void
+}) {
+  const onComplete = useCallback(
+    (
+      completedRun: {
+        isSuccess: boolean
+        isCancelled: boolean
+        error?: { message?: string }
+        output?: { steps: number }
+      },
+      error?: Error
+    ) => {
+      if (error) {
+        toast.error(error.message)
+      } else if (completedRun.isSuccess) {
+        toast.success(
+          `Workflow completed: ${completedRun.output?.steps ?? 0} steps.`
+        )
+      } else if (completedRun.isCancelled) {
+        toast.error("Workflow was canceled.")
+      } else {
+        toast.error(completedRun.error?.message ?? "Workflow failed.")
+      }
+
+      onFinished()
+    },
+    [onFinished]
+  )
+
+  useRealtimeRun<typeof runWorkflowTask>(run.id, {
+    accessToken: run.publicAccessToken,
+    onComplete,
+    skipColumns: ["payload"],
+  })
+
+  return null
+}
+
 function RunButton({ workflowId }: { workflowId: string }) {
   const { getEdges, getNodes } = useReactFlow<StepNodeType>()
+  const [activeRun, setActiveRun] = useState<WorkflowRun | null>(null)
   const [isPending, startTransition] = useTransition()
+  const finishRun = useCallback(() => setActiveRun(null), [])
 
   return (
     <Button
       size="sm"
       variant="secondary"
-      disabled={isPending}
+      disabled={isPending || activeRun !== null}
       onClick={() => {
         const graph = {
           nodes: getNodes(),
@@ -289,16 +341,24 @@ function RunButton({ workflowId }: { workflowId: string }) {
 
         startTransition(async () => {
           try {
-            await runWorkflowAction({ id: workflowId, graph })
+            const run = await runWorkflowAction({ id: workflowId, graph })
+            setActiveRun(run)
             toast.success("Workflow started.")
-          } catch {
-            toast.error("Couldn't start the workflow.")
+          } catch (error) {
+            toast.error(
+              error instanceof Error
+                ? error.message
+                : "Couldn't start the workflow."
+            )
           }
         })
       }}
     >
       <Play fill="currentColor" />
-      {isPending ? "Starting" : "Run"}
+      {isPending ? "Starting" : activeRun ? "Running" : "Run"}
+      {activeRun && (
+        <WorkflowRunNotifier run={activeRun} onFinished={finishRun} />
+      )}
     </Button>
   )
 }
