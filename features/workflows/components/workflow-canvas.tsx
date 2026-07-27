@@ -21,12 +21,12 @@ import {
 } from "@xyflow/react"
 import { Cursors } from "@liveblocks/react-flow"
 import { GitBranchIcon } from "lucide-react"
-import { useTheme } from "next-themes"
 import "@xyflow/react/dist/style.css"
 import "@liveblocks/react-ui/styles.css"
 import "@liveblocks/react-flow/styles.css"
 import { StepNode } from "@/features/workflows/components/step-node"
 import type { StepNodeType } from "@/features/workflows/nodes/node-registry"
+import { useTheme } from "@/components/theme-provider"
 
 type WorkflowNode = StepNodeType
 export type WorkflowEdge = Edge
