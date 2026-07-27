@@ -31,15 +31,15 @@ export default function RootLayout({
       )}
     >
       <body>
-        <ClerkProvider
-          appearance={{ theme: shadcn }}
-          taskUrls={{ "choose-organization": "/choose-organization" }}
-        >
-          <ThemeProvider>
+        <ThemeProvider>
+          <ClerkProvider
+            appearance={{ theme: shadcn }}
+            taskUrls={{ "choose-organization": "/choose-organization" }}
+          >
             {children}
             <Toaster />
-          </ThemeProvider>
-        </ClerkProvider>
+          </ClerkProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
