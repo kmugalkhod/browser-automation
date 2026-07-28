@@ -2,9 +2,10 @@ import { logger, task } from "@trigger.dev/sdk"
 import toposort from "toposort"
 
 import { getWorkflow } from "@/features/workflows/data"
+import { interpolate } from "@/features/workflows/lib/interpolate"
 import { validateGraph } from "@/features/workflows/lib/validateGraph"
-import {Stagehand} from "@browserbasehq/stagehand"
-import {nodeExecutors} from "@/features/workflows/nodes/nodes-executors"
+import { Stagehand } from "@browserbasehq/stagehand"
+import { nodeExecutors } from "@/features/workflows/nodes/nodes-executors"
 
 export const runWorkflowTask = task({
   id: "run-workflow",
@@ -45,36 +46,48 @@ export const runWorkflowTask = task({
     })
 
     let stagehand: Stagehand | undefined
+    const nodeOutputs: Record<string, unknown> = {}
     const getStagehand = async () => {
-     if(stagehand) return stagehand
-     stagehand = new Stagehand({
-      env: "BROWSERBASE",
-      apiKey: process.env.BROWSERBASE_API_KEY,
-      model : "google/gemini-2.5-flash",
-      disablePino : true
-     })
-     await stagehand.init()
-     return stagehand
-    }
-
-    for (const nodeId of order) {
-      const node = nodesById.get(nodeId)
-
-      if (!node) {
-        continue
-      }
-
-      logger.log("Running step", {
-        step: node.data.title,
-        stepId: node.id,
+      if (stagehand) return stagehand
+      stagehand = new Stagehand({
+        env: "BROWSERBASE",
+        apiKey: process.env.BROWSERBASE_API_KEY,
+        model: "google/gemini-2.5-flash",
+        disablePino: true,
       })
-      const executor = nodeExecutors[node.data.type as keyof typeof nodeExecutors]
-
-      if (executor) {
-        await executor({ values: node.data.values, getStagehand })
-      }
+      await stagehand.init()
+      return stagehand
     }
 
-    return { steps: order.length }
+    try {
+      for (const nodeId of order) {
+        const node = nodesById.get(nodeId)
+
+        if (!node) {
+          continue
+        }
+
+        logger.log("Running step", {
+          step: node.data.title,
+          stepId: node.id,
+        })
+        const executor =
+          nodeExecutors[node.data.type as keyof typeof nodeExecutors]
+
+        if (executor) {
+          const values = Object.fromEntries(
+            Object.entries(node.data.values).map(([key, value]) => [
+              key,
+              interpolate(value, nodeOutputs),
+            ])
+          )
+          nodeOutputs[node.id] = await executor({ values, getStagehand })
+        }
+      }
+
+      return { steps: order.length }
+    } finally {
+      await stagehand?.close()
+    }
   },
 })

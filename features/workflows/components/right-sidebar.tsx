@@ -40,6 +40,7 @@ import {
   type StepNodeKind,
   type StepNodeType,
 } from "@/features/workflows/nodes/node-registry"
+import { useUpstreamConnections } from "@/features/workflows/hooks/useUpstreamConnections"
 
 const sections: { kind: StepNodeKind; label: string }[] = [
   { kind: "trigger", label: "Triggers" },
@@ -96,10 +97,12 @@ function Field({
   field,
   value,
   onChange,
+  onFocus,
 }: {
   field: NodeField
   value: string
   onChange: (value: string) => void
+  onFocus: () => void
 }) {
   const inputProps = {
     id: field.key,
@@ -109,6 +112,7 @@ function Field({
     onChange: (
       event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
     ) => onChange(event.target.value),
+    onFocus,
   }
 
   if (field.multiline) {
@@ -120,6 +124,11 @@ function Field({
 
 function Inspector({ node }: { node: StepNodeType | undefined }) {
   const { updateNodeData } = useReactFlow<StepNodeType>()
+  const upstreamConnections = useUpstreamConnections(node)
+  const [lastEditedField, setLastEditedField] = useState<{
+    nodeId: string
+    key: string
+  } | null>(null)
 
   if (!node) {
     return (
@@ -133,6 +142,25 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
 
   const { type, title, values } = node.data
   const definition: NodeDefinition = nodeRegistry[type]
+  const activeFieldKey =
+    lastEditedField?.nodeId === node.id &&
+    definition.fields.some((field) => field.key === lastEditedField.key)
+      ? lastEditedField.key
+      : definition.fields[0]?.key
+
+  const insertConnectionToken = (token: string) => {
+    if (!activeFieldKey) {
+      return
+    }
+
+    updateNodeData(node.id, {
+      values: {
+        ...values,
+        [activeFieldKey]: `${values[activeFieldKey] ?? ""}${token}`,
+      },
+    })
+    setLastEditedField({ nodeId: node.id, key: activeFieldKey })
+  }
 
   return (
     <Section title={title} icon={<NodeIcon type={type} />}>
@@ -162,10 +190,34 @@ function Inspector({ node }: { node: StepNodeType | undefined }) {
                   updateNodeData(node.id, {
                     values: { ...values, [field.key]: value },
                   })
+                  setLastEditedField({ nodeId: node.id, key: field.key })
                 }}
+                onFocus={() =>
+                  setLastEditedField({ nodeId: node.id, key: field.key })
+                }
               />
             </div>
           ))
+        )}
+        {upstreamConnections.length > 0 && (
+          <div className="flex flex-col gap-2 border-t border-border pt-3">
+            <h3 className="text-xs font-medium">Connections</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {upstreamConnections.map((connection) => (
+                <Button
+                  key={connection.token}
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => insertConnectionToken(connection.token)}
+                  className="h-7 gap-1.5 px-2 text-xs"
+                >
+                  <NodeIcon type={connection.type} className="size-3.5" />
+                  {connection.label}
+                </Button>
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </Section>
