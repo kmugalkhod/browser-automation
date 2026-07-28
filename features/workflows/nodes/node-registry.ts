@@ -96,3 +96,7 @@ export function createStepNode({
     },
   }
 }
+
+export type ActionNodeType = {
+  [K in NodeType]: (typeof nodeRegistry)[K]["kind"] extends "action" ? K : never
+}[NodeType]

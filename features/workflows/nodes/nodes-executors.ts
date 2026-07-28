@@ -1,0 +1,22 @@
+import type {Stagehand} from "@browserbasehq/stagehand"
+
+import type {
+    ActionNodeType,
+    NodeType,
+} from "@/features/workflows/nodes/node-registry"
+
+import { openUrl }  from "@/features/workflows/nodes/open-url"
+
+export type NodeContext = {
+    values: Record<string, string>
+    getStagehand: () => Promise<Stagehand>
+}
+
+export type NodeExecutor = (context: NodeContext) => Promise<unknown>
+
+export const nodeExecutors: Record<ActionNodeType, NodeExecutor> = {
+   "open-url" : async ({values, getStagehand}) =>
+    openUrl({stagehand: await getStagehand(), url: values.url})
+} satisfies Record<ActionNodeType, NodeExecutor>
+
+

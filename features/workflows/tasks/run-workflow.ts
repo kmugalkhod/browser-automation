@@ -3,6 +3,8 @@ import toposort from "toposort"
 
 import { getWorkflow } from "@/features/workflows/data"
 import { validateGraph } from "@/features/workflows/lib/validateGraph"
+import {Stagehand} from "@browserbasehq/stagehand"
+import {nodeExecutors} from "@/features/workflows/nodes/nodes-executors"
 
 export const runWorkflowTask = task({
   id: "run-workflow",
@@ -42,6 +44,19 @@ export const runWorkflowTask = task({
       steps: order.length,
     })
 
+    let stagehand: Stagehand | undefined
+    const getStagehand = async () => {
+     if(stagehand) return stagehand
+     stagehand = new Stagehand({
+      env: "BROWSERBASE",
+      apiKey: process.env.BROWSERBASE_API_KEY,
+      model : "google/gemini-2.5-flash",
+      disablePino : true
+     })
+     await stagehand.init()
+     return stagehand
+    }
+
     for (const nodeId of order) {
       const node = nodesById.get(nodeId)
 
@@ -53,7 +68,11 @@ export const runWorkflowTask = task({
         step: node.data.title,
         stepId: node.id,
       })
-      // TODO: Execute the node according to its registry type.
+      const executor = nodeExecutors[node.data.type as keyof typeof nodeExecutors]
+
+      if (executor) {
+        await executor({ values: node.data.values, getStagehand })
+      }
     }
 
     return { steps: order.length }
