@@ -1,4 +1,4 @@
-import { logger, task } from "@trigger.dev/sdk"
+import { logger, metadata, task } from "@trigger.dev/sdk"
 import toposort from "toposort"
 
 import { getWorkflow } from "@/features/workflows/data"
@@ -6,6 +6,11 @@ import { interpolate } from "@/features/workflows/lib/interpolate"
 import { validateGraph } from "@/features/workflows/lib/validateGraph"
 import { Stagehand } from "@browserbasehq/stagehand"
 import { nodeExecutors } from "@/features/workflows/nodes/nodes-executors"
+
+export type RunStep = {
+  id: string
+  status: "pending" | "running" | "done" | "failed"
+}
 
 export const runWorkflowTask = task({
   id: "run-workflow",
@@ -39,6 +44,12 @@ export const runWorkflowTask = task({
         edges.map(({ source, target }) => [source, target])
       )
       .filter((id) => connectedNodeIds.has(id))
+    const steps: RunStep[] = order.map((id) => ({
+      id,
+      status: "pending",
+    }))
+
+    metadata.set("steps", steps)
 
     logger.log("Running workflow", {
       workflowName: workflow.name,
@@ -71,21 +82,41 @@ export const runWorkflowTask = task({
           step: node.data.title,
           stepId: node.id,
         })
-        const executor =
-          nodeExecutors[node.data.type as keyof typeof nodeExecutors]
+        const step = steps.find((step) => step.id === nodeId)
 
-        if (executor) {
-          const values = Object.fromEntries(
-            Object.entries(node.data.values).map(([key, value]) => [
-              key,
-              interpolate(value, nodeOutputs),
-            ])
-          )
-          nodeOutputs[node.id] = await executor({ values, getStagehand })
+        if (!step) {
+          continue
+        }
+
+        step.status = "running"
+        metadata.set("steps", steps)
+        await metadata.flush()
+
+        try {
+          const executor =
+            nodeExecutors[node.data.type as keyof typeof nodeExecutors]
+
+          if (executor) {
+            const values = Object.fromEntries(
+              Object.entries(node.data.values).map(([key, value]) => [
+                key,
+                interpolate(value, nodeOutputs),
+              ])
+            )
+            nodeOutputs[node.id] = await executor({ values, getStagehand })
+          }
+
+          step.status = "done"
+          metadata.set("steps", steps)
+        } catch (error) {
+          step.status = "failed"
+          metadata.set("steps", steps)
+          await metadata.flush()
+          throw error
         }
       }
 
-      return { steps: order.length }
+      return { steps }
     } finally {
       await stagehand?.close()
     }

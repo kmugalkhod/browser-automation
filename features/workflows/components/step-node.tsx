@@ -5,12 +5,18 @@ import {
   nodeRegistry,
   type StepNodeType,
 } from "@/features/workflows/nodes/node-registry"
+import { Spinner } from "@/components/ui/spinner"
+import { useLatestRunSteps } from "@/features/workflows/components/workflow-runs-provider"
 import { cn } from "@/lib/utils"
 
-function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
+function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
   const { type, kind, title, values } = data
   const def = nodeRegistry[type]
   const Icon = def.icon
+  const { steps, isLive } = useLatestRunSteps()
+  const step = steps.find((step) => step.id === id)
+  const isRunning = isLive && step?.status === "running"
+  const isFailed = step?.status === "failed"
 
   // A trigger starts the flow and takes no input, so it has no target handle.
   const hasTarget = kind !== "trigger"
@@ -21,7 +27,12 @@ function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
         "group relative w-56 rounded-(--radius) border border-border bg-card text-card-foreground transition-[border-color,box-shadow,background-color] duration-200 ease-out hover:border-foreground/25 hover:bg-card",
         selected
           ? "border-ring ring-2 ring-ring/35 ring-offset-2 ring-offset-background"
-          : "shadow-xs"
+          : "shadow-xs",
+        isRunning
+          ? "border-blue-500"
+          : isFailed
+            ? "border-destructive"
+            : undefined
       )}
     >
       {hasTarget && (
@@ -40,7 +51,14 @@ function StepNodeComponent({ data, selected }: NodeProps<StepNodeType>) {
             def.accent
           )}
         >
-          <Icon className="size-4" />
+          {isRunning ? (
+            <Spinner
+              aria-label="Step running"
+              className="size-4 motion-reduce:animate-none"
+            />
+          ) : (
+            <Icon className="size-4" />
+          )}
         </div>
         <div className="min-w-0">
           <span className="block truncate text-sm font-semibold">{title}</span>
