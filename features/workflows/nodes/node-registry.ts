@@ -1,5 +1,13 @@
 import type { Node, XYPosition } from "@xyflow/react"
-import { Globe, MousePointerClick, type LucideIcon } from "lucide-react"
+import {
+  Bot,
+  Globe,
+  FileSearch,
+  MousePointer2,
+  MousePointerClick,
+  Search,
+  type LucideIcon,
+} from "lucide-react"
 
 export type StepNodeKind = "trigger" | "action"
 
@@ -12,8 +20,8 @@ export type NodeField = {
   required?: boolean
 }
 export type NodeOutput = {
-  path : string
-  label : string
+  path: string
+  label: string
 }
 
 // A node type's manifest entry. Add a node by adding an entry to nodeRegistry.
@@ -24,7 +32,7 @@ export type NodeDefinition = {
   icon: LucideIcon
   accent: string // Tailwind classes for the icon chip color
   fields: NodeField[]
-  outputs : NodeOutput[]
+  outputs: NodeOutput[]
 }
 
 export const nodeRegistry = {
@@ -35,7 +43,7 @@ export const nodeRegistry = {
     icon: MousePointerClick,
     accent: "bg-blue-500 text-white",
     fields: [],
-    outputs : []
+    outputs: [],
   },
   "open-url": {
     type: "open-url",
@@ -57,9 +65,85 @@ export const nodeRegistry = {
         multiline: true,
       },
     ],
-    outputs : [
-      {path : "url", label : "URL"},
-      {path : "title", label : "Title"}
+    outputs: [
+      { path: "url", label: "URL" },
+      { path: "title", label: "Title" },
+    ],
+  },
+  act: {
+    type: "act",
+    kind: "action",
+    label: "Act",
+    icon: MousePointer2,
+    accent: "bg-violet-500 text-white",
+    fields: [
+      {
+        key: "instruction",
+        label: "Instruction",
+        placeholder: "Click the sign in button",
+        multiline: true,
+        required: true,
+      },
+    ],
+    outputs: [
+      { path: "success", label: "Success" },
+      { path: "message", label: "Message" },
+      { path: "url", label: "URL" },
+    ],
+  },
+  extract: {
+    type: "extract",
+    kind: "action",
+    label: "Extract",
+    icon: FileSearch,
+    accent: "bg-amber-500 text-white",
+    fields: [
+      {
+        key: "instruction",
+        label: "Instruction",
+        placeholder: "Extract the product price",
+        multiline: true,
+        required: true,
+      },
+    ],
+    outputs: [{ path: "extraction", label: "Result" }],
+  },
+  observe: {
+    type: "observe",
+    kind: "action",
+    label: "Observe",
+    icon: Search,
+    accent: "bg-cyan-500 text-white",
+    fields: [
+      {
+        key: "instruction",
+        label: "Instruction",
+        placeholder: "Find the sign in button",
+        multiline: true,
+        required: true,
+      },
+    ],
+    outputs: [{ path: "matches", label: "Matches" }],
+  },
+  agent: {
+    type: "agent",
+    kind: "action",
+    label: "Agent",
+    icon: Bot,
+    accent: "bg-fuchsia-500 text-white",
+    fields: [
+      {
+        key: "instruction",
+        label: "Instruction",
+        placeholder: "Find the latest product announcement and summarize it",
+        multiline: true,
+        required: true,
+      },
+    ],
+    outputs: [
+      { path: "success", label: "Success" },
+      { path: "message", label: "Message" },
+      { path: "completed", label: "Completed" },
     ],
   },
 } satisfies Record<string, NodeDefinition>

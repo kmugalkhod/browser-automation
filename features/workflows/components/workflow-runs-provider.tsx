@@ -47,11 +47,14 @@ export function useLatestRunSteps() {
     )
   }
 
-  const latestRun = context.runs.at(-1)
+  const activeRun = context.runs.findLast(
+    (run) => run.isQueued || run.isExecuting
+  )
+  const latestRun = activeRun ?? context.runs.at(-1)
   const liveSteps = latestRun?.metadata?.steps as RunStep[] | undefined
 
   return {
     steps: latestRun?.output?.steps ?? liveSteps ?? [],
-    isLive: latestRun?.status === "QUEUED" || latestRun?.status === "EXECUTING",
+    isLive: Boolean(activeRun),
   }
 }

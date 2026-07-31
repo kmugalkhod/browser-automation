@@ -29,7 +29,7 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
           ? "border-ring ring-2 ring-ring/35 ring-offset-2 ring-offset-background"
           : "shadow-xs",
         isRunning
-          ? "border-blue-500"
+          ? "border-blue-500 bg-blue-500/5 ring-2 ring-blue-500/20"
           : isFailed
             ? "border-destructive"
             : undefined
@@ -62,8 +62,15 @@ function StepNodeComponent({ id, data, selected }: NodeProps<StepNodeType>) {
         </div>
         <div className="min-w-0">
           <span className="block truncate text-sm font-semibold">{title}</span>
-          <span className="block text-xs text-muted-foreground capitalize">
-            {kind}
+          <span
+            className={cn(
+              "block text-xs capitalize",
+              isRunning
+                ? "font-medium text-blue-700 dark:text-blue-300"
+                : "text-muted-foreground"
+            )}
+          >
+            {isRunning ? "Running" : kind}
           </span>
         </div>
       </div>

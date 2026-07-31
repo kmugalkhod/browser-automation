@@ -44,12 +44,19 @@ export const runWorkflowTask = task({
         edges.map(({ source, target }) => [source, target])
       )
       .filter((id) => connectedNodeIds.has(id))
-    const steps: RunStep[] = order.map((id) => ({
+    let steps: RunStep[] = order.map((id) => ({
       id,
       status: "pending",
     }))
 
     metadata.set("steps", steps)
+
+    const setStepStatus = (stepId: string, status: RunStep["status"]) => {
+      steps = steps.map((step) =>
+        step.id === stepId ? { ...step, status } : step
+      )
+      metadata.set("steps", steps)
+    }
 
     logger.log("Running workflow", {
       workflowName: workflow.name,
@@ -82,14 +89,11 @@ export const runWorkflowTask = task({
           step: node.data.title,
           stepId: node.id,
         })
-        const step = steps.find((step) => step.id === nodeId)
-
-        if (!step) {
+        if (!steps.some((step) => step.id === nodeId)) {
           continue
         }
 
-        step.status = "running"
-        metadata.set("steps", steps)
+        setStepStatus(nodeId, "running")
         await metadata.flush()
 
         try {
@@ -106,11 +110,9 @@ export const runWorkflowTask = task({
             nodeOutputs[node.id] = await executor({ values, getStagehand })
           }
 
-          step.status = "done"
-          metadata.set("steps", steps)
+          setStepStatus(nodeId, "done")
         } catch (error) {
-          step.status = "failed"
-          metadata.set("steps", steps)
+          setStepStatus(nodeId, "failed")
           await metadata.flush()
           throw error
         }
